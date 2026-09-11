@@ -10,6 +10,8 @@ from app.database import BaseModel
 
 LOGIN_LIMIT = 50
 FIO_LIMIT = 100
+TITLE_LIMIT = 100
+BODY_LIMIT = 5000
 
 ModelT = tp.TypeVar("ModelT", bound="SoftDeleteModel")
 
@@ -64,6 +66,31 @@ class User(SoftDeleteModel):
             "id": str(self.id),
             "login": self.login,
             "fio": self.fio,
+            "created_at": as_iso(self.created_at),
+            "is_deleted": self.is_deleted,
+            "deleted_at": as_iso(self.deleted_at),
+        }
+
+
+class Note(SoftDeleteModel):
+    """заметка пользователя"""
+
+    user = peewee.ForeignKeyField(User, backref="notes", column_name="user_id", index=True)
+    title = peewee.CharField(max_length=TITLE_LIMIT)
+    body = peewee.TextField()
+
+    @property
+    def owner_id(self) -> str:
+        """идентификатор автора без обращения к таблице пользователей"""
+        return str(getattr(self, "user_id"))
+
+    def to_dict(self) -> tp.Dict[str, tp.Any]:
+        """представление заметки для json"""
+        return {
+            "id": str(self.id),
+            "user_id": self.owner_id,
+            "title": self.title,
+            "body": self.body,
             "created_at": as_iso(self.created_at),
             "is_deleted": self.is_deleted,
             "deleted_at": as_iso(self.deleted_at),
