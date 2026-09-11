@@ -24,3 +24,22 @@ def payload(body: tp.Any, wrapper: str) -> tp.Dict[str, tp.Any]:
     if not isinstance(inner, dict):
         raise ApiError(BAD_REQUEST, f"Field '{wrapper}' should be a json object")
     return inner
+
+
+def string_field(
+    data: tp.Dict[str, tp.Any],
+    field: str,
+    limit: int,
+    required: bool,
+) -> tp.Optional[str]:
+    """строковое поле с ограничением длины"""
+    if field not in data:
+        if required:
+            raise ApiError(BAD_REQUEST, f"Field '{field}' is required")
+        return None
+    value = data[field]
+    if not isinstance(value, str) or not value.strip():
+        raise ApiError(BAD_REQUEST, f"Field '{field}' is required")
+    if len(value) > limit:
+        raise ApiError(BAD_REQUEST, f"Field '{field}' should be shorter than {limit}")
+    return value.strip()
