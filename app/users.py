@@ -3,9 +3,10 @@
 import typing as tp
 
 import flask
+import peewee
 
 from app import validation
-from app.models import User
+from app.models import FIO_LIMIT, LOGIN_LIMIT, User
 
 blueprint = flask.Blueprint("users", __name__, url_prefix="/api/users")
 
@@ -36,3 +37,19 @@ def list_users() -> flask.Response:
 def get_user(user_id: str) -> flask.Response:
     """пользователь по идентификатору"""
     return flask.jsonify({"user": find_user(user_id).to_dict()})
+
+
+@blueprint.post("")
+def create_user() -> flask.Response:
+    """создать пользователя"""
+    data = read_payload()
+    login = validation.string_field(data, "login", LOGIN_LIMIT, required=True)
+    fio = validation.string_field(data, "fio", FIO_LIMIT, required=True)
+    if User.active().where(User.login == login).exists():
+        reason = f"Field 'login' should be unique, '{login}' is taken"
+        raise validation.ApiError(validation.BAD_REQUEST, reason)
+    try:
+        user = User.create(login=login, fio=fio)
+    except peewee.IntegrityError as error:
+        raise validation.ApiError(validation.SERVER_ERROR, str(error)) from error
+    return flask.jsonify({"user": user.to_dict()})
