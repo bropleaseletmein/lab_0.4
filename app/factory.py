@@ -6,7 +6,7 @@ import typing as tp
 import flask
 import werkzeug.exceptions
 
-from app import users
+from app import notes, users
 from app.database import connect, database
 from app.validation import NOT_FOUND, SERVER_ERROR, ApiError
 
@@ -56,6 +56,7 @@ def create_app(database_path: tp.Optional[tp.Union[str, pathlib.Path]] = None) -
     app = flask.Flask(__name__)
     connect(database_path)
     app.register_blueprint(users.blueprint)
+    app.register_blueprint(notes.blueprint)
     register_connection(app)
     register_handlers(app)
     return app
