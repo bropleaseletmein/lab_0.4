@@ -6,7 +6,7 @@ import flask
 import peewee
 
 from app import validation
-from app.models import FIO_LIMIT, LOGIN_LIMIT, User
+from app.models import FIO_LIMIT, LOGIN_LIMIT, Note, User
 
 blueprint = flask.Blueprint("users", __name__, url_prefix="/api/users")
 
@@ -72,3 +72,13 @@ def update_user(user_id: str) -> flask.Response:
         user.fio = fio
     user.save()
     return flask.jsonify({"user": user.to_dict()})
+
+
+@blueprint.delete("/<user_id>")
+def delete_user(user_id: str) -> tp.Tuple[flask.Response, int]:
+    """пометить пользователя удалённым вместе с его заметками"""
+    user = find_user(user_id)
+    for note in Note.active_list(Note.active().where(Note.user == user)):
+        note.soft_delete()
+    user.soft_delete()
+    return flask.jsonify({"user": user.to_dict()}), 202
