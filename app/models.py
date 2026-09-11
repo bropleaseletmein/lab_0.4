@@ -8,6 +8,9 @@ import peewee
 
 from app.database import BaseModel
 
+LOGIN_LIMIT = 50
+FIO_LIMIT = 100
+
 ModelT = tp.TypeVar("ModelT", bound="SoftDeleteModel")
 
 
@@ -47,3 +50,21 @@ class SoftDeleteModel(BaseModel):
         self.is_deleted = True
         self.deleted_at = datetime.datetime.now()
         self.save()
+
+
+class User(SoftDeleteModel):
+    """пользователь сервиса"""
+
+    login = peewee.CharField(max_length=LOGIN_LIMIT, unique=True)
+    fio = peewee.CharField(max_length=FIO_LIMIT)
+
+    def to_dict(self) -> tp.Dict[str, tp.Any]:
+        """представление пользователя для json"""
+        return {
+            "id": str(self.id),
+            "login": self.login,
+            "fio": self.fio,
+            "created_at": as_iso(self.created_at),
+            "is_deleted": self.is_deleted,
+            "deleted_at": as_iso(self.deleted_at),
+        }
