@@ -53,3 +53,22 @@ def create_user() -> flask.Response:
     except peewee.IntegrityError as error:
         raise validation.ApiError(validation.SERVER_ERROR, str(error)) from error
     return flask.jsonify({"user": user.to_dict()})
+
+
+@blueprint.patch("/<user_id>")
+def update_user(user_id: str) -> flask.Response:
+    """изменить пользователя"""
+    user = find_user(user_id)
+    data = read_payload()
+    login = validation.string_field(data, "login", LOGIN_LIMIT, required=False)
+    fio = validation.string_field(data, "fio", FIO_LIMIT, required=False)
+    if login is not None:
+        taken = User.active().where(User.login == login, User.id != user.id)
+        if taken.exists():
+            reason = f"Field 'login' should be unique, '{login}' is taken"
+            raise validation.ApiError(validation.BAD_REQUEST, reason)
+        user.login = login
+    if fio is not None:
+        user.fio = fio
+    user.save()
+    return flask.jsonify({"user": user.to_dict()})
