@@ -37,3 +37,15 @@ class ApiTestCase(unittest.TestCase):
         response = self.client.post("/api/users", json={"user": {"login": login, "fio": fio}})
         self.assertEqual(response.status_code, 200)
         return response.get_json()["user"]
+
+    def make_note(
+        self,
+        user_id: str,
+        title: str = "Заметка",
+        body: str = "текст",
+    ) -> tp.Dict[str, tp.Any]:
+        """создать заметку через api"""
+        payload = {"note": {"user_id": user_id, "title": title, "body": body}}
+        response = self.client.post("/api/notes", json=payload)
+        self.assertEqual(response.status_code, 200)
+        return response.get_json()["note"]
