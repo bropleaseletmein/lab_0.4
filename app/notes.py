@@ -5,7 +5,7 @@ import typing as tp
 import flask
 
 from app import validation
-from app.models import Note
+from app.models import BODY_LIMIT, TITLE_LIMIT, Note, User
 
 blueprint = flask.Blueprint("notes", __name__, url_prefix="/api/notes")
 
@@ -18,6 +18,15 @@ def find_note(note_id: str) -> Note:
     if note is None:
         raise validation.ApiError(validation.NOT_FOUND, f"Note '{note_id}' is not found")
     return note
+
+
+def find_owner(user_id: str) -> User:
+    """живой автор заметки или ошибка валидации"""
+    user = User.active_by_id(user_id)
+    if user is None:
+        reason = f"Field 'user_id' references unknown user '{user_id}'"
+        raise validation.ApiError(validation.BAD_REQUEST, reason)
+    return user
 
 
 def read_payload() -> tp.Dict[str, tp.Any]:
@@ -43,3 +52,14 @@ def list_notes() -> flask.Response:
 def get_note(note_id: str) -> flask.Response:
     """заметка по идентификатору"""
     return flask.jsonify({"note": find_note(note_id).to_dict()})
+
+
+@blueprint.post("")
+def create_note() -> flask.Response:
+    """создать заметку"""
+    data = read_payload()
+    user_id = validation.uuid_field(data, "user_id", required=True)
+    title = validation.string_field(data, "title", TITLE_LIMIT, required=True)
+    body = validation.string_field(data, "body", BODY_LIMIT, required=True)
+    note = Note.create(user=find_owner(str(user_id)), title=title, body=body)
+    return flask.jsonify({"note": note.to_dict()})
