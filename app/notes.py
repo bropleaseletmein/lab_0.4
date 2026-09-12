@@ -63,3 +63,21 @@ def create_note() -> flask.Response:
     body = validation.string_field(data, "body", BODY_LIMIT, required=True)
     note = Note.create(user=find_owner(str(user_id)), title=title, body=body)
     return flask.jsonify({"note": note.to_dict()})
+
+
+@blueprint.patch("/<note_id>")
+def update_note(note_id: str) -> flask.Response:
+    """изменить заметку"""
+    note = find_note(note_id)
+    data = read_payload()
+    user_id = validation.uuid_field(data, "user_id", required=False)
+    title = validation.string_field(data, "title", TITLE_LIMIT, required=False)
+    body = validation.string_field(data, "body", BODY_LIMIT, required=False)
+    if user_id is not None:
+        note.user = find_owner(user_id)
+    if title is not None:
+        note.title = title
+    if body is not None:
+        note.body = body
+    note.save()
+    return flask.jsonify({"note": note.to_dict()})
