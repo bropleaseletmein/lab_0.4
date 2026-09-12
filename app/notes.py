@@ -81,3 +81,11 @@ def update_note(note_id: str) -> flask.Response:
         note.body = body
     note.save()
     return flask.jsonify({"note": note.to_dict()})
+
+
+@blueprint.delete("/<note_id>")
+def delete_note(note_id: str) -> tp.Tuple[flask.Response, int]:
+    """пометить заметку удалённой"""
+    note = find_note(note_id)
+    note.soft_delete()
+    return flask.jsonify({"note": note.to_dict()}), 202
